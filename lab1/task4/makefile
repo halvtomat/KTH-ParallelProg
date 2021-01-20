@@ -1,2 +1,2 @@
 all:
-	g++ tee.cpp -o tee -Wall
+	g++ tee.cpp -o tee -Wall -pthread
