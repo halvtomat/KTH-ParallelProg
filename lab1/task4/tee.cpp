@@ -3,31 +3,41 @@
 #include <pthread.h>
 #include <string>
 
-int BUFFER_SIZE = 8;
-char* buffer;
-pthread_mutex_t buffer_lock;
-pthread_cond_t buffer_cond;
-bool write1, write2, end;
+#define BUFFER_SIZE 8
+struct buffer_t {
+    char* buffer[BUFFER_SIZE];
+    size_t len;
+    pthread_mutex_t lock;
+    pthread_cond_t producer_cond, consumer_cond; 
+};
+
+buffer_t *buffer;
 
 void init(){
-    pthread_mutex_init(&buffer_lock, NULL);
-    pthread_cond_init(&buffer_cond, NULL);
-    write1 = false;
-    write2 = false;
-    end = false;
-    buffer = (char *)malloc(BUFFER_SIZE);
+    buffer = (buffer_t *)malloc(sizeof(buffer_t));
+    *buffer = {
+        .len = 0,
+        .lock = PTHREAD_MUTEX_INITIALIZER,
+        .producer_cond = PTHREAD_COND_INITIALIZER,
+        .consumer_cond = PTHREAD_COND_INITIALIZER
+    };
 }
 
 void* read(void* arg){
     while(std::cin.eof() == false && std::cin.fail() == false){
-        pthread_mutex_lock(&buffer_lock);
-        while(write1 == false && write2 == false)
-            pthread_cond_wait(&buffer_cond, &buffer_lock);
+        pthread_mutex_lock(buffer->lock);
+        while(write1 == false || write2 == false){
+            std::cout << "write1 = " << write1 << " write2 = " << write2  << " buffer = " << buffer << "\n";
+            pthread_cond_wait(&producer_cond, &buffer_lock);
+        }
+
+        std::cin.get(buffer, BUFFER_SIZE);
+        std::cout << "write1 = " << write1 << " write2 = " << write2  << " buffer = " << buffer << "\n";
         write1 = false;
         write2 = false;
-        std::cin.get(buffer, BUFFER_SIZE);
-        pthread_cond_signal(&buffer_cond);
+        pthread_cond_signal(&consumer_cond);
         pthread_mutex_unlock(&buffer_lock);
+
     }
     end = true;
     return NULL;
@@ -37,10 +47,10 @@ void* write_stdout(void* arg){
     while(end == false){
         pthread_mutex_lock(&buffer_lock);
         while(write1 == true)
-            pthread_cond_wait(&buffer_cond, &buffer_lock);
+            pthread_cond_wait(&consumer_cond, &buffer_lock);
+        //std::cout << buffer;
         write1 = true;
-        std::cout << buffer;
-        pthread_cond_signal(&buffer_cond);
+        pthread_cond_signal(&producer_cond);
         pthread_mutex_unlock(&buffer_lock);
     }
     return NULL;
@@ -52,10 +62,10 @@ void* write_file(void* arg){
     while(end == false){
         pthread_mutex_lock(&buffer_lock);
         while(write2 == true)
-            pthread_cond_wait(&buffer_cond, &buffer_lock);
+            pthread_cond_wait(&consumer_cond, &buffer_lock);
+        file.write(buffer,BUFFER_SIZE);
         write2 = true;
-        file << buffer;
-        pthread_cond_signal(&buffer_cond);
+        pthread_cond_signal(&producer_cond);
         pthread_mutex_unlock(&buffer_lock);
     }
     file.close();
@@ -63,8 +73,6 @@ void* write_file(void* arg){
 }
 
 int main(int argc, char const *argv[]){
-    init();
-
     pthread_t t_read;
     pthread_t t_write_stdout;
     pthread_t t_write_file;
