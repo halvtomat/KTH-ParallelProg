@@ -6,7 +6,10 @@
 
 int solution_count = 0;
 bool print = false;
+bool data = false;
 int queen_positions[N] = {0};
+int thread_tasks[8];
+int solutions[8];
 
 void print_solution(int qp[N]){
     std::cout << "[";
@@ -19,7 +22,7 @@ void print_solution(int qp[N]){
 }
 
 void check_solution(int qp[N]){
-    //std::cout << "thread: " << omp_get_thread_num() << std::endl;
+    thread_tasks[omp_get_thread_num()]++;
     int a,b;
     for(int i = 0; i < N; i++){
         a = qp[i];
@@ -31,13 +34,12 @@ void check_solution(int qp[N]){
     }
     if(print)
         print_solution(qp);
-    //#pragma omp critical(dataupdate)
-    //solution_count++;
+    solutions[omp_get_thread_num()]++;
 }
 
 void find_solutions(int k){
     if(k == N){
-        #pragma omp task shared(solution_count)
+        #pragma omp task firstprivate(queen_positions)
         check_solution(queen_positions);
     }
         
@@ -52,8 +54,13 @@ void find_solutions(int k){
 int main(int argc, char const *argv[]){
     double start, finish;
 
-    if((argc == 3) && argv[2][0] == '1')
-        print = true;
+    if(argc == 3){
+        if(argv[2][0] == '1')
+            print = true;
+        else if(argv[2][0] == '2')
+            data = true;
+    }
+        
     omp_set_num_threads(atoi(argv[1]));
 
     start = omp_get_wtime();
@@ -67,7 +74,19 @@ int main(int argc, char const *argv[]){
     #pragma omp taskwait
     finish = omp_get_wtime();
 
-    std::cout << "solution count = " << solution_count << std::endl;
-    std::cout << "execution time = " << finish - start << std::endl;
+    if(data == false){
+        int sum = 0;
+        for(int i = 0; i < 8; i++){
+            sum += thread_tasks[i];
+            solution_count += solutions[i];
+        std::cout << "thread " << i << " tasks = " << thread_tasks[i] << std::endl; 
+        }
+        std::cout << "total tasks = " << sum << std::endl;
+        std::cout << "solution count = " << solution_count << std::endl;
+        std::cout << "execution time = " << finish - start << std::endl;
+    }
+    else
+        std::cout << finish - start << std::endl;
+
     return 0;
 }
