@@ -1,17 +1,19 @@
 #include<iostream>
 #include<string>
+#include<algorithm>
+#include<iterator>
+#include<vector>
 #include<omp.h>
 
 #define N 8
+#define MAX_THREADS 8
 
-int solution_count = 0;
 bool print = false;
 bool data = false;
-int queen_positions[N] = {0};
-int thread_tasks[8];
-int solutions[8];
+int thread_tasks[MAX_THREADS];
+int solutions[MAX_THREADS];
 
-void print_solution(int qp[N]){
+void print_solution(std::vector<int> qp){
     std::cout << "[";
     for(int i = 0; i < N; i++){
         std::cout << qp[i];
@@ -21,7 +23,7 @@ void print_solution(int qp[N]){
     std::cout << "]\n";
 }
 
-void check_solution(int qp[N]){
+bool check_solution(std::vector<int> qp){
     thread_tasks[omp_get_thread_num()]++;
     int a,b;
     for(int i = 0; i < N; i++){
@@ -29,31 +31,39 @@ void check_solution(int qp[N]){
         for(int j = i + 1; j < N; j++){
             b = qp[j];
             if(a == b || a == b + (j - i) || a == b - (j - i))
-                return;
+                return false;
         }
     }
-    if(print)
-        print_solution(qp);
-    solutions[omp_get_thread_num()]++;
+    return true;
 }
 
-void find_solutions(int k){
+void find_solutions(int k, std::vector<int> qp){
+    std::vector<int> qp_copy (N);
+    qp_copy = qp;
     if(k == N){
-        #pragma omp task firstprivate(queen_positions)
-        check_solution(queen_positions);
+        #pragma omp task firstprivate(qp_copy)
+        {
+            if(check_solution(qp_copy)){
+                if(print){
+                    #pragma omp critical
+                    print_solution(qp_copy);
+                }
+                solutions[omp_get_thread_num()]++;
+            }
+        }
     }
         
     else{
         for(int i = 0; i < N; i++){
-            queen_positions[k] = i;
-            find_solutions(k+1);
+            qp[k] = i;
+            find_solutions(k+1, qp);
         }
     }
 }
 
 int main(int argc, char const *argv[]){
     double start, finish;
-
+    std::vector<int> qp (N);
     if(argc == 3){
         if(argv[2][0] == '1')
             print = true;
@@ -68,15 +78,16 @@ int main(int argc, char const *argv[]){
     {
         #pragma omp single nowait 
         {
-            find_solutions(0);
+            find_solutions(0, qp);
         }
     }
     #pragma omp taskwait
     finish = omp_get_wtime();
 
     if(data == false){
+        int solution_count = 0;
         int sum = 0;
-        for(int i = 0; i < 8; i++){
+        for(int i = 0; i < MAX_THREADS; i++){
             sum += thread_tasks[i];
             solution_count += solutions[i];
         std::cout << "thread " << i << " tasks = " << thread_tasks[i] << std::endl; 
