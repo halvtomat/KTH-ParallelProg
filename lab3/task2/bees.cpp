@@ -11,7 +11,7 @@ sem_t empty;
 
 int N = 0;
 int W = 0;
-int DISH = 0;
+int POT = 0;
 
 std::random_device dev;
 std::mt19937 rng(dev());
@@ -21,11 +21,11 @@ void *consumer(void * args){
     while(true){
         sem_wait(&food);
         sem_wait(&lock);
-        DISH--;
-        if(DISH == 0)
+	for(int i = 0; i < W; i++){
+            POT--;
             sem_post(&empty);
-        int num = *(int *) args;
-        std::cout << "Bebe" << num <<  " has eaten\n";
+	}
+        std::cout << "Bear has eaten\n";
         sem_post(&lock);
         sleep(dist(rng));
     }
@@ -36,10 +36,11 @@ void *producer(void * args){
     while(true){
         sem_wait(&empty);
         sem_wait(&lock);
-        for(int i = 0; i < W; i++)
-            sem_post(&food);
-        DISH = W;
-        std::cout << "Moma put food\n";
+	POT++;
+	if(POT == W)
+	    sem_post(&food);
+	int num = *(int *)args;
+        std::cout << "Bee " << num << " put food\n";
         sem_post(&lock);
         sleep(dist(rng));
     }
@@ -53,23 +54,23 @@ int main(int argc, char const *argv[]){
         
     W = atoi(argv[1]);
     N = atoi(argv[2]);
-    DISH = W;
+    POT = W;
     sem_init(&lock, 0, 1);
-    sem_init(&food, 0, W);
+    sem_init(&food, 0, 1);
     sem_init(&empty, 0, 0);
 
-    pthread_t moma, bebe[N];
-    pthread_create(&moma, NULL, producer, NULL);
+    pthread_t bear, bee[N];
+    pthread_create(&bear, NULL, consumer, NULL);
     for(int i = 0; i < N; i++){
         int *num = (int *)malloc(sizeof(int));
         *num = i;
-        pthread_create(&bebe[i], NULL, consumer, (void *)num);
+        pthread_create(&bee[i], NULL, producer, (void *)num);
     }
         
 
-    pthread_join(moma, NULL);
+    pthread_join(bear, NULL);
     for(int i = 0; i < N; i++)
-        pthread_join(bebe[i], NULL);
+        pthread_join(bee[i], NULL);
 
     return 0;
 }

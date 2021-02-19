@@ -9,7 +9,5 @@ Run:
 	make
 to create the executable, then run:
 
-	./birds x y
-to run the program. 
-x is how much food the mamabird brings and y is how many babybirds there are, these arguments are required to run the program.
-
+	bees x y
+to run the program, x is how much honey the bees need to gather before the bear eats it and y is how many bees there are, these are required arguments.
