@@ -21,25 +21,24 @@ void *consumer(void * args){
     while(true){
         sem_wait(&food);
         sem_wait(&lock);
-	for(int i = 0; i < W; i++){
+        for(int i = 0; i < W; i++){
             POT--;
             sem_post(&empty);
-	}
+        }
         std::cout << "Bear has eaten\n";
         sem_post(&lock);
         sleep(dist(rng));
     }
-
 }
 
 void *producer(void * args){
     while(true){
         sem_wait(&empty);
         sem_wait(&lock);
-	POT++;
-	if(POT == W)
-	    sem_post(&food);
-	int num = *(int *)args;
+	    POT++;
+	    if(POT == W)
+	        sem_post(&food);
+	    int num = *(int *)args;
         std::cout << "Bee " << num << " put food\n";
         sem_post(&lock);
         sleep(dist(rng));
@@ -67,7 +66,6 @@ int main(int argc, char const *argv[]){
         pthread_create(&bee[i], NULL, producer, (void *)num);
     }
         
-
     pthread_join(bear, NULL);
     for(int i = 0; i < N; i++)
         pthread_join(bee[i], NULL);

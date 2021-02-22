@@ -8,6 +8,7 @@
 sem_t lock;
 sem_t food;
 sem_t empty;
+sem_t eating;
 
 int N = 0;
 int W = 0;
@@ -19,24 +20,30 @@ std::uniform_int_distribution<std::mt19937::result_type> dist(1,4);
 
 void *consumer(void * args){
     while(true){
+        sem_wait(&eating);
         sem_wait(&food);
         sem_wait(&lock);
-        DISH--;
-        if(DISH == 0)
-            sem_post(&empty);
         int num = *(int *) args;
-        std::cout << "Bebe" << num <<  " has eaten\n";
+        if(DISH == 0){
+            sem_post(&empty);
+            sem_post(&lock);
+            std::cout << "Bebe " << num << " waiting for food...\n";
+            sem_wait(&food);
+            sem_wait(&lock);
+        }
+        DISH--;
+        std::cout << "Bebe " << num <<  " has eaten\n";
         sem_post(&lock);
+        sem_post(&eating);
         sleep(dist(rng));
     }
-
 }
 
 void *producer(void * args){
     while(true){
         sem_wait(&empty);
         sem_wait(&lock);
-        for(int i = 0; i < W; i++)
+        for(int i = 0; i < W + 1; i++)
             sem_post(&food);
         DISH = W;
         std::cout << "Moma put food\n";
@@ -55,8 +62,9 @@ int main(int argc, char const *argv[]){
     N = atoi(argv[2]);
     DISH = W;
     sem_init(&lock, 0, 1);
-    sem_init(&food, 0, W);
+    sem_init(&food, 0, W + 1);
     sem_init(&empty, 0, 0);
+    sem_init(&eating, 0, 1);
 
     pthread_t moma, bebe[N];
     pthread_create(&moma, NULL, producer, NULL);
