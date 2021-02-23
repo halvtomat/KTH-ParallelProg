@@ -11,5 +11,5 @@ optimized:
 	g++ birds.cpp -o birds -Wall -pthread -O3
 
 clean:
-	rm -rf birds
+	rm -rf birds *.o
 

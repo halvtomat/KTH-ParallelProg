@@ -1,16 +1,7 @@
 #include <iostream>
-#include <vector>
-#include <random>
-#include <unistd.h>
-#include <pthread.h>
-#include <semaphore.h>
 #include "monitor.h"
 
-monitor mon(4, 2);
-
-std::random_device dev;
-std::mt19937 rng(dev());
-std::uniform_int_distribution<std::mt19937::result_type> dist(1,4);
+monitor mon;
 
 void *consumer(void * args){
     int num = *(int *)args;
@@ -30,10 +21,10 @@ int main(int argc, char const *argv[]){
         return 1;
     }
 
-    //int W = atoi(argv[1]);
+    int W = atoi(argv[1]);
     int N = atoi(argv[2]);
 
-    //mon = monitor(N, W);
+    mon = monitor(N, W);
         
     pthread_t moma, bebe[N];
     pthread_create(&moma, NULL, producer, NULL);
@@ -42,7 +33,6 @@ int main(int argc, char const *argv[]){
         *num = i;
         pthread_create(&bebe[i], NULL, consumer, (void *)num);
     }
-    //mon.start();
 
     pthread_join(moma, NULL);
     for(int i = 0; i < N; i++)

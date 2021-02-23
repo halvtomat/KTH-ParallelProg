@@ -3,72 +3,68 @@
 monitor::monitor(){
     n = 4;
     w = 4;
-    dish = w;
-    getting_food = 0;
+    pot = 0;
+    eating = 0;
     rng = std::mt19937(dev());
     dist = std::uniform_int_distribution<std::mt19937::result_type>(1, 4);
     pthread_cond_init(&empty, NULL);
     pthread_cond_init(&full, NULL);
-    pthread_cond_init(&eat, NULL);
     pthread_mutex_init(&lock, NULL);
 }
 
 monitor::monitor(int N, int W){
     n = N;
     w = W;
-    dish = w;
-    getting_food = 0;
+    pot = 0;
+    eating = 0;
     rng = std::mt19937(dev());
     dist = std::uniform_int_distribution<std::mt19937::result_type>(1, 4);
     pthread_cond_init(&empty, NULL);
     pthread_cond_init(&full, NULL);
-    pthread_cond_init(&eat, NULL);
     pthread_mutex_init(&lock, NULL);
 }
 
 monitor::~monitor(){
     pthread_cond_destroy(&empty);
     pthread_cond_destroy(&full);
-    pthread_cond_destroy(&eat);
     pthread_mutex_destroy(&lock);
 }
 
 monitor& monitor::operator=(const monitor & mon){
     n = mon.n;
     w = mon.w;
-    dish = w;
+    pot = 0;
     return *this;
 }
 
 void monitor::start(){
-    pthread_cond_signal(&eat);
+    pthread_cond_signal(&empty);
 }
 
-void monitor::consume(int num){
+void monitor::consume(){
     pthread_mutex_lock(&lock);
-    while(getting_food)
-        pthread_cond_wait(&eat, &lock);
-    if(dish == 0){
-        getting_food = 1;
-        std::cout << "Bebe " << num << " waiting for food...\n";
-        pthread_cond_signal(&empty);
+    while(!eating)
         pthread_cond_wait(&full, &lock);
-    }
-    dish--;
-    getting_food = 0;
-    std::cout << "Bebe " << num << " has eaten\n";
-    pthread_cond_signal(&eat);
+    pot = 0;
+    std::cout << "Bear has eaten\n";
+    eating = 0;
+    pthread_cond_signal(&empty);
     pthread_mutex_unlock(&lock);
     sleep(dist(rng));
 }
 
-void monitor::produce(){
+void monitor::produce(int num){
     pthread_mutex_lock(&lock);
-    while(!getting_food)
+    while(eating)
         pthread_cond_wait(&empty, &lock);
-    dish = w;
-    std::cout << "Mama put food\n";
-    pthread_cond_signal(&full);
+    pot++;
+    std::cout << "Bee " << num << " made honey\n";
+    if(pot == w){
+        eating = 1;
+        pthread_cond_signal(&full);
+        pthread_cond_wait(&empty, &lock);
+    }
+    pthread_cond_signal(&empty);
     pthread_mutex_unlock(&lock);
     sleep(dist(rng));  
 }

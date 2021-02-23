@@ -1,7 +1,9 @@
-# The Hungry Birds Problem (one producer - multiple consumers)
-Given are *n* baby birds and one parent bird. The baby birds eat out of a common dish that initially contains W worms. Each baby bird repeatedly takes a worm, eats it, sleeps for a while, takes another worm, and so on. If the dish is empty, the baby bird who discovers the empty dish chirps real loud to awaken the parent bird. The parent bird flies off and gathers W more worms, puts them in the dish, and then waits for the dish to be empty again. This pattern repeats forever.
+# The Bear and the Honeybees Problem (multiple producers - one consumer)
+Given are n honeybees and a hungry bear. They share a pot of honey. The pot is initially empty; its capacity is H portions of honey. The bear sleeps until the pot is full, then eats all the honey and goes back to sleep. Each bee repeatedly gathers one portion of honey and puts it in the pot; the bee who fills the pot awakens the bear.
 
-Develop and implement a multithreaded program to simulate the actions of the birds. Represent the birds as concurrent threads (i.e. array of "babyBird" threads and a "parentBird" thread), and the dish as a critical shared resource that can be accessed by at most one bird at a time. Use only semaphores for synchronization. Your program should print a trace of interesting simulation events. Is your solution fair? Explain when presenting homework.   
+Represent the bear and honeybees as concurrent processes or threads (i.e. a "bear" process and an array of "honeybee" processes), and the honey pot as a critical resource (a monitor) that can be accessed by at most one process at a time (either by the "bear" process or by one of the "honeybee" processes). 
+
+Develop a monitor (with condition variables) to synchronize the actions of the bear and honeybees, i.e. develop a monitor that represents the pot of honey. Define the monitor's operations and their implementation. Implement a multithreaded application in Java or C++ to simulate the actions of the bear and honeybees represented as concurrent threads and the pot represented as as the monitor. Is your solution fair? Explain in comments in the source code.
 
 ## How to run
 Run:
