@@ -6,7 +6,7 @@ monitor::monitor(){
     dish = w;
     getting_food = 0;
     rng = std::mt19937(dev());
-    dist = std::uniform_int_distribution<std::mt19937::result_type>(1, 4);
+    dist = std::uniform_int_distribution<std::mt19937::result_type>(0, 2);
     pthread_cond_init(&empty, NULL);
     pthread_cond_init(&full, NULL);
     pthread_cond_init(&eat, NULL);
@@ -19,7 +19,7 @@ monitor::monitor(int N, int W){
     dish = w;
     getting_food = 0;
     rng = std::mt19937(dev());
-    dist = std::uniform_int_distribution<std::mt19937::result_type>(1, 4);
+    dist = std::uniform_int_distribution<std::mt19937::result_type>(0, 2);
     pthread_cond_init(&empty, NULL);
     pthread_cond_init(&full, NULL);
     pthread_cond_init(&eat, NULL);

@@ -7,9 +7,6 @@ monitor.o: monitor.cpp
 birds.o: birds.cpp
 	g++ birds.cpp -c
 
-optimized:
-	g++ birds.cpp -o birds -Wall -pthread -O3
-
 clean:
 	rm -rf birds *.o
 
