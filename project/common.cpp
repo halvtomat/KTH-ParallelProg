@@ -1,9 +1,20 @@
 #include "common.h"
 
-void initialize_SDL(){
-    SDL_Init(SDL_INIT_VIDEO);
+void initialize_SDL(SDL_Window *window, SDL_Renderer *renderer){
+    if(SDL_Init(SDL_INIT_VIDEO) < 0){
+        std::cout << SDL_GetError() << "\n";
+        return;
+    }
     window = SDL_CreateWindow("N-body simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if(window ==  NULL){
+        std::cout << SDL_GetError() << "\n";
+        return;
+    }
+    renderer = SDL_CreateRenderer(window, -1, 0);
+    if(renderer == NULL){
+        std::cout << SDL_GetError() << "\n";
+        return;
+    }
 }
 
 void exit_SDL(){

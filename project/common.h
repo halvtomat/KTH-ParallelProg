@@ -5,20 +5,17 @@
 #include <string>
 #include <cmath>
 #include <SDL2/SDL.h>
+#include <iostream>
 
 const int WINDOW_WIDTH = 600;
 const int WINDOW_HEIGHT = 600;
-
-SDL_Window* window;
-SDL_Surface* screen_surface;
-SDL_Renderer* renderer;
 
 struct point_t{
     double x;
     double y;
 };
 
-void initialize_SDL();
+void initialize_SDL(SDL_Window *window, SDL_Renderer *renderer);
 void exit_SDL();
 
 double point_distance(point_t a, point_t b);

@@ -7,6 +7,8 @@
 #define G 6.67e-11
 #define DT 1.0
 #define WORLD_SIZE 600
+#define DELAY 100
+#define DRAW_SIZE 10
 
 int gnumBodies = 0;
 int numSteps = 0;
@@ -16,11 +18,16 @@ point_t *v;
 point_t *f;
 double *m;
 
+SDL_Window *window = NULL;
+SDL_Renderer *renderer = NULL;
+SDL_Event event;
+
 void initialize_bodies();
 void calculate_forces();
 void move_bodies();
 void draw_bodies();
 void print_help();
+void exit();
 
 int main(int argc, char const *argv[]){
     if(read_bool_argument(argc, argv, "-h", false))
@@ -35,26 +42,24 @@ int main(int argc, char const *argv[]){
     f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
     m = (double *)malloc(sizeof(double)*gnumBodies);
 
-    initialize_SDL();
+    if(draw)
+        initialize_SDL(window, renderer);
+
     initialize_bodies();
 
     double startTime = 0;
     for(int i = 0; i < numSteps; i++){
         calculate_forces();
-        if(draw)
+        if(draw){
             draw_bodies();
+            SDL_Delay(DELAY);
+        }
         move_bodies();
     }
     double endTime = 1;
 
-    free(p);
-    free(v);
-    free(f);
-    free(m);
-    exit_SDL();
-
     std::cout << "NUM BODIES = " << gnumBodies << " , NUM STEPS = " << numSteps << " , TIME = " << endTime - startTime << std::endl;
-
+    exit(draw);
     return 0;
 }
 
@@ -107,12 +112,14 @@ void move_bodies(){
 }
 
 void draw_bodies(){
-    SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xFF);
+    while(SDL_PollEvent(&event) != 0);
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
 
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     for(int i = 0; i < gnumBodies; i++){
-        SDL_RenderDrawPoint(renderer, p[i].x, p[i].y);
+        SDL_Rect rect = {p[i].x, p[i].y, DRAW_SIZE, DRAW_SIZE};
+        SDL_RenderFillRect(renderer, &rect);
     }
     SDL_RenderPresent(renderer);
 }
@@ -124,4 +131,13 @@ void print_help(){
     std::cout << "-n <x>    : set number of steps to x. default = " << DEFAULT_NUM_STEPS << "\n";
     std::cout << "-d        : draw the point in each iteration. default = false\n";
     std::cout << "\n";
+}
+
+void exit(bool draw){
+    free(p);
+    free(v);
+    free(f);
+    free(m);
+    if(draw)
+        exit_SDL();
 }
