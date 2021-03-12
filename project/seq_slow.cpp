@@ -6,7 +6,7 @@
 #define DEFAULT_NUM_STEPS 100
 #define G 6.67e-11
 #define DT 1.0
-#define WORLD_SIZE 1000
+#define WORLD_SIZE 600
 
 int gnumBodies = 0;
 int numSteps = 0;
@@ -35,6 +35,7 @@ int main(int argc, char const *argv[]){
     f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
     m = (double *)malloc(sizeof(double)*gnumBodies);
 
+    initialize_SDL();
     initialize_bodies();
 
     double startTime = 0;
@@ -50,6 +51,7 @@ int main(int argc, char const *argv[]){
     free(v);
     free(f);
     free(m);
+    exit_SDL();
 
     std::cout << "NUM BODIES = " << gnumBodies << " , NUM STEPS = " << numSteps << " , TIME = " << endTime - startTime << std::endl;
 
@@ -105,14 +107,14 @@ void move_bodies(){
 }
 
 void draw_bodies(){
-    std::cout << "--------------------\n\n";
+    SDL_SetRenderDrawColor(renderer, 0x0, 0x0, 0x0, 0xFF);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     for(int i = 0; i < gnumBodies; i++){
-        std::cout << "p[" << i << "] = (" << p[i].x << ", " << p[i].y << ")\t";
-        std::cout << "v[" << i << "] = (" << v[i].x << ", " << v[i].y << ")\t";
-        std::cout << "f[" << i << "] = (" << f[i].x << ", " << f[i].y << ")\t";
-        std::cout << "\n";
+        SDL_RenderDrawPoint(renderer, p[i].x, p[i].y);
     }
-    std::cout << "\n";
+    SDL_RenderPresent(renderer);
 }
 
 void print_help(){

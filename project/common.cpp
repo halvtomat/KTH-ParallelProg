@@ -1,5 +1,15 @@
 #include "common.h"
 
+void initialize_SDL(){
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow("N-body simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+}
+
+void exit_SDL(){
+    SDL_Quit();
+}
+
 double point_distance(point_t a, point_t b){
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }

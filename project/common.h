@@ -4,11 +4,22 @@
 #include <cstdlib>
 #include <string>
 #include <cmath>
+#include <SDL2/SDL.h>
+
+const int WINDOW_WIDTH = 600;
+const int WINDOW_HEIGHT = 600;
+
+SDL_Window* window;
+SDL_Surface* screen_surface;
+SDL_Renderer* renderer;
 
 struct point_t{
     double x;
     double y;
 };
+
+void initialize_SDL();
+void exit_SDL();
 
 double point_distance(point_t a, point_t b);
 double calc_magnitude(double a, double b, double distance, double G);
