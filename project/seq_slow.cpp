@@ -4,11 +4,13 @@
 
 #define DEFAULT_NUM_BODIES 100
 #define DEFAULT_NUM_STEPS 100
-#define G 6.67e-11
+#define G 100
 #define DT 1.0
-#define WORLD_SIZE 600
+#define WORLD_SIZE 1000
+#define SPREAD 100 // 0 - 100
+#define MAX_SPEED 5.0
 #define DELAY 100
-#define DRAW_SIZE 10
+#define DRAW_SIZE 3
 
 int gnumBodies = 0;
 int numSteps = 0;
@@ -21,6 +23,8 @@ double *m;
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Event event;
+
+bool running = true;
 
 void initialize_bodies();
 void calculate_forces();
@@ -42,8 +46,22 @@ int main(int argc, char const *argv[]){
     f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
     m = (double *)malloc(sizeof(double)*gnumBodies);
 
-    if(draw)
-        initialize_SDL(window, renderer);
+    if(draw){
+        if(SDL_Init(SDL_INIT_VIDEO) < 0){
+            std::cout << SDL_GetError() << "\n";
+            return 1;
+        }
+        window = SDL_CreateWindow("N-body simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+        if(window ==  NULL){
+            std::cout << SDL_GetError() << "\n";
+            return 1;
+        }
+        renderer = SDL_CreateRenderer(window, -1, 0);
+        if(renderer == NULL){
+            std::cout << SDL_GetError() << "\n";
+            return 1;
+        }
+    }
 
     initialize_bodies();
 
@@ -53,6 +71,8 @@ int main(int argc, char const *argv[]){
         if(draw){
             draw_bodies();
             SDL_Delay(DELAY);
+            if(running == false)
+                return 0;
         }
         move_bodies();
     }
@@ -60,20 +80,20 @@ int main(int argc, char const *argv[]){
 
     std::cout << "NUM BODIES = " << gnumBodies << " , NUM STEPS = " << numSteps << " , TIME = " << endTime - startTime << std::endl;
     exit(draw);
-    return 0;
 }
 
 void initialize_bodies(){
     std::random_device dev;
     std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> distP(0, WORLD_SIZE);
-    std::uniform_int_distribution<std::mt19937::result_type> distV(0, 10);
+    std::default_random_engine re;
+    std::uniform_int_distribution<std::mt19937::result_type> distP(WORLD_SIZE/2 - WORLD_SIZE/2 * SPREAD/100, WORLD_SIZE/2 + WORLD_SIZE/2 * SPREAD/100);
+    std::uniform_real_distribution<double> distV(-1.0 * MAX_SPEED, MAX_SPEED);
 
     for(int i = 0; i < gnumBodies; i++){
-        p[i].x = distP(rng);
-        p[i].y = distP(rng);
-        v[i].x = distV(rng);
-        v[i].y = distV(rng);
+        p[i].x = distP(re);
+        p[i].y = distP(re);
+        v[i].x = distV(re);
+        v[i].y = distV(re);
         f[i].x = 0.0;
         f[i].y = 0.0;
         m[i] = 1.0;
@@ -112,11 +132,14 @@ void move_bodies(){
 }
 
 void draw_bodies(){
-    while(SDL_PollEvent(&event) != 0);
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0x00, 0xFF);
+    while(SDL_PollEvent(&event) != 0){
+        if(event.type == SDL_QUIT)
+            exit(true);
+    }
+    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(renderer);
-
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
     for(int i = 0; i < gnumBodies; i++){
         SDL_Rect rect = {p[i].x, p[i].y, DRAW_SIZE, DRAW_SIZE};
         SDL_RenderFillRect(renderer, &rect);
@@ -140,4 +163,5 @@ void exit(bool draw){
     free(m);
     if(draw)
         exit_SDL();
+    running = false;
 }

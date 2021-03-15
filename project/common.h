@@ -7,8 +7,8 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-const int WINDOW_WIDTH = 600;
-const int WINDOW_HEIGHT = 600;
+const int WINDOW_WIDTH = 1000;
+const int WINDOW_HEIGHT = 1000;
 
 struct point_t{
     double x;

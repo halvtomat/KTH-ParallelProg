@@ -1,20 +1,7 @@
 #include "common.h"
 
 void initialize_SDL(SDL_Window *window, SDL_Renderer *renderer){
-    if(SDL_Init(SDL_INIT_VIDEO) < 0){
-        std::cout << SDL_GetError() << "\n";
-        return;
-    }
-    window = SDL_CreateWindow("N-body simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-    if(window ==  NULL){
-        std::cout << SDL_GetError() << "\n";
-        return;
-    }
-    renderer = SDL_CreateRenderer(window, -1, 0);
-    if(renderer == NULL){
-        std::cout << SDL_GetError() << "\n";
-        return;
-    }
+
 }
 
 void exit_SDL(){
@@ -39,14 +26,14 @@ point_t point_direction(point_t a, point_t b){
 point_t point_deltav(point_t f, double m, double DT){
     point_t deltav;
     deltav.x = f.x/m * DT;
-    deltav.x = f.y/m * DT;
+    deltav.y = f.y/m * DT;
     return deltav;
 }
 
 point_t point_deltap(point_t v, point_t deltav, double DT){
     point_t deltap;
     deltap.x = (v.x + deltav.x/2) * DT;
-    deltap.x = (v.y + deltav.y/2) * DT;
+    deltap.y = (v.y + deltav.y/2) * DT;
     return deltap;
 }
 
