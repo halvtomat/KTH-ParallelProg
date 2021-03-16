@@ -12,8 +12,8 @@ double point_distance(point_t a, point_t b){
     return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
-double calc_magnitude(double a, double b, double distance, double G){
-    return (G*a*b) / pow(distance, 2);
+double calc_magnitude(double a, double b, double distance, double G, double softening){
+    return (G*a*b) / pow(distance + softening, 2);
 }
 
 point_t point_direction(point_t a, point_t b){

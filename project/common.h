@@ -5,6 +5,7 @@
 #include <string>
 #include <cmath>
 #include <SDL2/SDL.h>
+#include <omp.h>
 #include <iostream>
 
 const int WINDOW_WIDTH = 1000;
@@ -19,7 +20,7 @@ void initialize_SDL(SDL_Window *window, SDL_Renderer *renderer);
 void exit_SDL();
 
 double point_distance(point_t a, point_t b);
-double calc_magnitude(double a, double b, double distance, double G);
+double calc_magnitude(double a, double b, double distance, double G, double softening);
 point_t point_direction(point_t a, point_t b);
 point_t point_deltav(point_t f, double m, double DT);
 point_t point_deltap(point_t v, point_t deltav, double DT);

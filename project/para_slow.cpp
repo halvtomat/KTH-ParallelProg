@@ -10,7 +10,7 @@
 #define WORLD_SIZE 1000
 #define SPREAD 100 // 0 - 100
 #define MAX_SPEED 5.0
-#define DELAY 100
+#define DELAY 10
 #define DRAW_SIZE 3
 
 int gnumBodies = 0;
@@ -29,6 +29,8 @@ bool running = true;
 bool draw = false;
 bool godPoint = false;
 
+int numWorkers = 4;
+
 void initialize_bodies();
 void calculate_forces();
 void move_bodies();
@@ -44,11 +46,14 @@ int main(int argc, char const *argv[]){
     numSteps = read_int_argument(argc, argv, "-n", DEFAULT_NUM_STEPS);
     draw = read_bool_argument(argc, argv, "-d", false);
     godPoint = read_bool_argument(argc, argv, "-g", false);
+    numWorkers = read_int_argument(argc, argv, "-w", 4);
 
     p = (point_t *)malloc(sizeof(point_t)*gnumBodies);
     v = (point_t *)malloc(sizeof(point_t)*gnumBodies);
-    f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
+    f = (point_t *)malloc(sizeof(point_t)*numWorkers*gnumBodies);
     m = (double *)malloc(sizeof(double)*gnumBodies);
+
+    omp_set_num_threads(numWorkers);
 
     if(draw){
         if(SDL_Init(SDL_INIT_VIDEO) < 0){
@@ -112,34 +117,52 @@ void initialize_bodies(){
 }
 
 void calculate_forces(){
-    double distance, magnitude; 
-    point_t direction;
-    for(int i = 0; i < gnumBodies-1; i++){
-        for(int j = i+1; j < gnumBodies; j++){
-            distance = point_distance(p[i], p[j]);
-            magnitude = calc_magnitude(m[i], m[j], distance, G, SOFTENING);
-            direction = point_direction(p[i], p[j]);
-            f[i].x += magnitude*direction.x/distance;
-            f[j].x -= magnitude*direction.x/distance;
-            f[i].y += magnitude*direction.y/distance;
-            f[j].y -= magnitude*direction.y/distance;
+    #pragma omp parallel
+    {
+        double distance, magnitude; 
+        point_t direction;
+        #pragma omp for
+        for(int i = 0; i < gnumBodies-1; i++){
+            for(int j = i+1; j < gnumBodies; j++){
+                distance = point_distance(p[i], p[j]);
+                magnitude = calc_magnitude(m[i], m[j], distance, G, SOFTENING);
+                direction = point_direction(p[i], p[j]);
+                int offset = gnumBodies*omp_get_thread_num();
+                (f + offset + i)->x += magnitude*direction.x/distance;
+                (f + offset + j)->x -= magnitude*direction.x/distance;
+                (f + offset + i)->y += magnitude*direction.y/distance;
+                (f + offset + j)->y -= magnitude*direction.y/distance;
+            }
         }
     }
+
 }
 
 void move_bodies(){
-    point_t deltav;
-    point_t deltap;
-    for(int i = 0; i < gnumBodies; i++){
-        deltav = point_deltav(f[i], m[i], DT);
-        deltap = point_deltap(v[i], deltav, DT);
-        v[i].x += deltav.x;
-        v[i].y += deltav.y;
-        p[i].x += deltap.x;
-        p[i].y += deltap.y;
-        f[i].x = 0.0;
-        f[i].y = 0.0;
+    #pragma omp parallel
+    {
+        point_t deltav;
+        point_t deltap;
+        point_t force;
+        #pragma omp for 
+        for(int i = 0; i < gnumBodies; i++){
+            for(int j = 0; j < numWorkers; j++){
+                force.x += (f + gnumBodies*j + i)->x;
+                force.y += (f + gnumBodies*j + i)->y;
+                (f + gnumBodies*j + i)->x = 0.0;
+                (f + gnumBodies*j + i)->y = 0.0;
+            }
+            deltav = point_deltav(force, m[i], DT);
+            deltap = point_deltap(v[i], deltav, DT);
+            v[i].x += deltav.x;
+            v[i].y += deltav.y;
+            p[i].x += deltap.x;
+            p[i].y += deltap.y;
+            force.x = 0.0;
+            force.y = 0.0;
+        }
     }
+
 }
 
 void draw_bodies(){
@@ -171,6 +194,7 @@ void print_help(){
     std::cout << "-n <x>    : set number of steps to x. default = " << DEFAULT_NUM_STEPS << "\n";
     std::cout << "-d        : draw the point in each iteration. default = false\n";
     std::cout << "-g        : make point[0] a god point with 100000000x more mass than the others. default = false\n";
+    std::cout << "-w <x>    : set number of workers (threads) to simultainiusly run the simulation. default = 4\n";
     std::cout << "\n";
 }
 
