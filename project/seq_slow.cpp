@@ -1,114 +1,55 @@
 #include <iostream>
-#include <random>
 #include "common.h"
 
-#define DEFAULT_NUM_BODIES 100
-#define DEFAULT_NUM_STEPS 100
-#define G 6.67e-5
-#define SOFTENING 1e-2
-#define DT 1.0
-#define WORLD_SIZE 1000
-#define SPREAD 100 // 0 - 100
-#define MAX_SPEED 5.0
-#define DELAY 100
-#define DRAW_SIZE 3
-
 int gnumBodies = 0;
-int numSteps = 0;
 
-point_t *p;
-point_t *v;
+Bodies *bodies;
 point_t *f;
-double *m;
 
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
-SDL_Event event;
-
-bool running = true;
-bool draw = false;
-bool godPoint = false;
-
-void initialize_bodies();
 void calculate_forces();
 void move_bodies();
-void draw_bodies();
-void print_help();
 void exit();
 
 int main(int argc, char const *argv[]){
     if(read_bool_argument(argc, argv, "-h", false))
-        print_help();
+        std::cout << help_message();
 
     gnumBodies = read_int_argument(argc, argv, "-b", DEFAULT_NUM_BODIES);
-    numSteps = read_int_argument(argc, argv, "-n", DEFAULT_NUM_STEPS);
-    draw = read_bool_argument(argc, argv, "-d", false);
-    godPoint = read_bool_argument(argc, argv, "-g", false);
+    int numSteps = read_int_argument(argc, argv, "-n", DEFAULT_NUM_STEPS);
+    bool draw = read_bool_argument(argc, argv, "-d", false);
+    bool godPoint = read_bool_argument(argc, argv, "-g", false);
 
-    p = (point_t *)malloc(sizeof(point_t)*gnumBodies);
-    v = (point_t *)malloc(sizeof(point_t)*gnumBodies);
     f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
-    m = (double *)malloc(sizeof(double)*gnumBodies);
 
-    if(draw){
-        if(SDL_Init(SDL_INIT_VIDEO) < 0){
-            std::cout << SDL_GetError() << "\n";
-            return 1;
-        }
-        window = SDL_CreateWindow("N-body simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-        if(window ==  NULL){
-            std::cout << SDL_GetError() << "\n";
-            return 1;
-        }
-        renderer = SDL_CreateRenderer(window, -1, 0);
-        if(renderer == NULL){
-            std::cout << SDL_GetError() << "\n";
-            return 1;
-        }
-    }
-
-    initialize_bodies();
+    bodies = new Bodies(
+        gnumBodies,
+        MAX_SPEED,
+        MAX_MASS,
+        SPREAD,
+        godPoint,
+        draw,
+        DELAY,
+        DRAW_SIZE,
+        WINDOW_HEIGHT,
+        WINDOW_WIDTH);
 
     double startTime = omp_get_wtime();
     for(int i = 0; i < numSteps; i++){
         calculate_forces();
         if(draw){
-            draw_bodies();
-            SDL_Delay(DELAY);
-            if(running == false)
-                return 0;
+            bodies->draw_bodies();
+            if(bodies->running == false){
+                numSteps = i;
+                break;
+            }
         }
         move_bodies();
     }
     double endTime = omp_get_wtime();
 
     std::cout << "NUM BODIES = " << gnumBodies << " , NUM STEPS = " << numSteps << " , TIME = " << endTime - startTime << std::endl;
-    exit(draw);
-}
-
-void initialize_bodies(){
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::default_random_engine re;
-    std::uniform_int_distribution<std::mt19937::result_type> distP(WORLD_SIZE/2 - WORLD_SIZE/2 * SPREAD/100, WORLD_SIZE/2 + WORLD_SIZE/2 * SPREAD/100);
-    std::uniform_real_distribution<double> distV(-1.0 * MAX_SPEED, MAX_SPEED);
-
-    for(int i = 0; i < gnumBodies; i++){
-        p[i].x = distP(re);
-        p[i].y = distP(re);
-        v[i].x = distV(re);
-        v[i].y = distV(re);
-        f[i].x = 0.0;
-        f[i].y = 0.0;
-        m[i] = 1.0;
-    }
-    if(godPoint){
-        m[0] = 100000000.0;
-        p[0].x = WORLD_SIZE/2;
-        p[0].y = WORLD_SIZE/2;
-        v[0].x = 0.0;
-        v[0].y = 0.0;
-    }
+    exit();
+    return 0;
 }
 
 void calculate_forces(){
@@ -116,9 +57,9 @@ void calculate_forces(){
     point_t direction;
     for(int i = 0; i < gnumBodies-1; i++){
         for(int j = i+1; j < gnumBodies; j++){
-            distance = point_distance(p[i], p[j]);
-            magnitude = calc_magnitude(m[i], m[j], distance, G, SOFTENING);
-            direction = point_direction(p[i], p[j]);
+            distance = point_distance(bodies->p[i], bodies->p[j]);
+            magnitude = calc_magnitude(bodies->m[i], bodies->m[j], distance, G, SOFTENING);
+            direction = point_direction(bodies->p[i], bodies->p[j]);
             f[i].x += magnitude*direction.x/distance;
             f[j].x -= magnitude*direction.x/distance;
             f[i].y += magnitude*direction.y/distance;
@@ -131,55 +72,18 @@ void move_bodies(){
     point_t deltav;
     point_t deltap;
     for(int i = 0; i < gnumBodies; i++){
-        deltav = point_deltav(f[i], m[i], DT);
-        deltap = point_deltap(v[i], deltav, DT);
-        v[i].x += deltav.x;
-        v[i].y += deltav.y;
-        p[i].x += deltap.x;
-        p[i].y += deltap.y;
+        deltav = point_deltav(f[i], bodies->m[i], DT);
+        deltap = point_deltap(bodies->v[i], deltav, DT);
+        bodies->v[i].x += deltav.x;
+        bodies->v[i].y += deltav.y;
+        bodies->p[i].x += deltap.x;
+        bodies->p[i].y += deltap.y;
         f[i].x = 0.0;
         f[i].y = 0.0;
     }
 }
 
-void draw_bodies(){
-    while(SDL_PollEvent(&event) != 0){
-        if(event.type == SDL_QUIT)
-            exit(true);
-    }
-    SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-    SDL_RenderClear(renderer);
-    
-    if(godPoint){
-        SDL_SetRenderDrawColor(renderer, 0xFF, 0x30, 0x30, 0xFF);
-        SDL_Rect rect = {(int)p[0].x, (int)p[0].y, DRAW_SIZE*2, DRAW_SIZE*2};
-        SDL_RenderFillRect(renderer, &rect);
-    }
-    
-    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    for(int i = 0 + godPoint; i < gnumBodies; i++){
-        SDL_Rect rect = {(int)p[i].x, (int)p[i].y, DRAW_SIZE, DRAW_SIZE};
-        SDL_RenderFillRect(renderer, &rect);
-    }
-    SDL_RenderPresent(renderer);
-}
-
-void print_help(){
-    std::cout << "Sequential N-bodies simulation\n\n";
-    std::cout << "-h        : displays this helper text\n";
-    std::cout << "-b <x>    : set number of bodies to x. default = " << DEFAULT_NUM_BODIES << "\n";
-    std::cout << "-n <x>    : set number of steps to x. default = " << DEFAULT_NUM_STEPS << "\n";
-    std::cout << "-d        : draw the point in each iteration. default = false\n";
-    std::cout << "-g        : make point[0] a god point with 100000000x more mass than the others. default = false\n";
-    std::cout << "\n";
-}
-
-void exit(bool draw){
-    free(p);
-    free(v);
+void exit(){
     free(f);
-    free(m);
-    if(draw)
-        exit_SDL();
-    running = false;
+    bodies->~Bodies();
 }
