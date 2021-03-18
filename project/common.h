@@ -14,14 +14,15 @@
 #define DEFAULT_NUM_BODIES 100
 #define DEFAULT_NUM_STEPS 100
 #define DEFAULT_NUM_WORKERS 4
-#define G 6.67e-5
-#define SOFTENING 1e-2
+#define G 6.67e-10
+#define SOFTENING 1e0
 #define DT 1.0
-#define SPREAD 90 // 0 - 100
-#define MAX_SPEED 5.0
-#define MAX_MASS 100.0
-#define DELAY 10
-#define DRAW_SIZE 3
+#define SPREAD 600 
+#define MAX_SPEED 1e-10
+#define MAX_MASS 1e10
+#define DELAY 0
+#define DRAW_SIZE 2
+#define ZOOM_FACTOR 0.1
 
 struct point_t{
     double x;

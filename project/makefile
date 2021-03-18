@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -O3 -Wall -fopenmp -lSDL2
-TARGETS = seq_slow para_slow
+TARGETS = seq_slow para_slow quad_tree.o
 
 all: $(TARGETS) 
 
@@ -9,8 +9,6 @@ para_slow: para_slow.o common.o
 
 seq_slow: seq_slow.o common.o
 	$(CC) -o $@ seq_slow.o common.o $(CFLAGS)
-
-
 
 %.o: %.cpp
 	$(CC) -c $*.cpp $(CFLAGS)

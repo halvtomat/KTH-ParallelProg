@@ -11,8 +11,11 @@ void move_bodies();
 void exit();
 
 int main(int argc, char const *argv[]){
-    if(read_bool_argument(argc, argv, "-h", false))
+    if(read_bool_argument(argc, argv, "-h", false)){
         std::cout << help_message();
+        return 0;
+    }
+        
 
     gnumBodies = read_int_argument(argc, argv, "-b", DEFAULT_NUM_BODIES);
     int numSteps = read_int_argument(argc, argv, "-n", DEFAULT_NUM_STEPS);

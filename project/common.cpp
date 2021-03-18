@@ -62,22 +62,21 @@ Bodies::~Bodies(){
 
 void Bodies::initialize_bodies(){
     std::default_random_engine re;
-    std::uniform_real_distribution<double> distX(windowWidth/2 - windowWidth/2 * spread/100, windowWidth/2 + windowWidth/2 * spread/100);
-    std::uniform_real_distribution<double> distY(windowHeight/2 - windowHeight/2 * spread/100, windowHeight/2 + windowHeight/2 * spread/100);
-    std::uniform_real_distribution<double> distV(-1.0 * maxSpeed, maxSpeed);
-    std::uniform_real_distribution<double> distM(1.0, maxMass);
+    std::normal_distribution<double> distPOS(0, spread);
+    std::normal_distribution<double> distV(0, maxSpeed);
+    std::normal_distribution<double> distM(maxMass/2, maxMass);
 
     for(int i = 0; i < gnumBodies; i++){
-        p[i].x = distX(re);
-        p[i].y = distY(re);
+        p[i].x = distPOS(re);
+        p[i].y = distPOS(re);
         v[i].x = distV(re);
         v[i].y = distV(re);
-        m[i] = distM(re);
+        m[i] = abs(distM(re));
     }
     if(godPoint){
-        m[0] = 100000000.0;
-        p[0].x = windowWidth/2;
-        p[0].y = windowHeight/2;
+        m[0] = 1e12;
+        p[0].x = 0.0;
+        p[0].y = 0.0;
         v[0].x = 0.0;
         v[0].y = 0.0;
     }
@@ -93,13 +92,13 @@ void Bodies::draw_bodies(){
     
     if(godPoint){
         SDL_SetRenderDrawColor(renderer, 0xFF, 0x30, 0x30, 0xFF);
-        SDL_Rect rect = {(int)p[0].x, (int)p[0].y, DRAW_SIZE*2, DRAW_SIZE*2};
+        SDL_Rect rect = {(int)((p[0].x*ZOOM_FACTOR) + windowWidth/2), (int)((p[0].y*ZOOM_FACTOR) + windowHeight/2), DRAW_SIZE*2, DRAW_SIZE*2};
         SDL_RenderFillRect(renderer, &rect);
     }
     
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     for(int i = 0 + godPoint; i < gnumBodies; i++){
-        SDL_Rect rect = {(int)p[i].x, (int)p[i].y, DRAW_SIZE, DRAW_SIZE};
+        SDL_Rect rect = {(int)((p[i].x*ZOOM_FACTOR) + windowWidth/2), (int)((p[i].y*ZOOM_FACTOR) + windowHeight/2), DRAW_SIZE, DRAW_SIZE};
         SDL_RenderFillRect(renderer, &rect);
     }
 
@@ -164,8 +163,8 @@ std::string help_message(){
     std::string message = "";
     message.append("N-bodies simulation\n\n");
     message.append("-h        : displays this helper text\n");
-    message.append("-b <x>    : set number of bodies to x. default = " + DEFAULT_NUM_BODIES + '\n');
-    message.append("-n <x>    : set number of steps to x. default = " + DEFAULT_NUM_STEPS + '\n');
+    message.append("-b <x>    : set number of bodies to x. default = 100\n");
+    message.append("-n <x>    : set number of steps to x. default = 100\n");
     message.append("-d        : draw the point in each iteration. default = false\n");
     message.append("-g        : make point[0] a god point with 100000000x more mass than the others. default = false\n");
     message.append("-w <x>    : set number of workers (threads) to simultainiusly run the simulation. default = 4\n");
