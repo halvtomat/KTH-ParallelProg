@@ -14,15 +14,16 @@
 #define DEFAULT_NUM_BODIES 100
 #define DEFAULT_NUM_STEPS 100
 #define DEFAULT_NUM_WORKERS 4
+#define DEFAULT_FAR 0.5
 #define G 6.67e-10
 #define SOFTENING 1e0
 #define DT 1.0
-#define SPREAD 600 
-#define MAX_SPEED 1e-10
-#define MAX_MASS 1e10
+#define SPREAD 500 
+#define MAX_SPEED 1e0
+#define MAX_MASS 1e5
 #define DELAY 0
 #define DRAW_SIZE 2
-#define ZOOM_FACTOR 0.1
+#define ZOOM_FACTOR 0.5
 
 struct point_t{
     double x;
@@ -73,6 +74,7 @@ point_t point_direction(point_t a, point_t b);
 point_t point_deltav(point_t f, double m, double deltaTime);
 point_t point_deltap(point_t v, point_t deltav, double deltaTime);
 
+double read_double_argument(int argc, const char **argv, std::string identifier, double default_value);
 int read_int_argument(int argc, const char **argv, std::string identifier, int defaul_value);
 bool read_bool_argument(int argc, const char **argv, std::string identifier, bool default_value);
 std::string read_string_argument(int argc, const char **argv, std::string identifier, std::string default_value);

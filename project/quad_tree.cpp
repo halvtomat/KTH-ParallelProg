@@ -1,16 +1,19 @@
 #include "quad_tree.h"
+#include <iostream>
 
-QuadTree::QuadTree(double startX, double startY, double size){
-    this->startX = startX;
-    this->startY = startY;
+QuadTree::QuadTree(point_t start, double size){
+    this->start.x = start.x;
+    this->start.y = start.y;
     this->size = size;
     root = new node_t;
     root->mass = 0;
-    root->centerX = 0;
-    root->centerY = 0;
-    root->startX = 0;
-    root->startY = 0;
+    root->center.x = 0;
+    root->center.y = 0;
+    root->start.x = start.x;
+    root->start.y = start.y;
     root->depth = 0;
+    root->id = -1;
+    root->isPoint = false;
     root->upLeft = nullptr;
     root->downLeft = nullptr;
     root->upRight = nullptr;
@@ -21,11 +24,11 @@ QuadTree::~QuadTree(){
     remove_node(root);
 }
 
-bool QuadTree::insert(double x, double y, double mass){
-    if(in_bounds(x, y) == false)
+bool QuadTree::insert(point_t point, double mass, int id){
+    if(in_bounds(point) == false)
         return false;
 
-    node_t* node = insert_helper(x, y, mass, root);
+    node_t* node = insert_helper(point, mass, id, root);
 
     if(node == nullptr)
         return false;
@@ -33,23 +36,25 @@ bool QuadTree::insert(double x, double y, double mass){
         return true;
 }
 
-bool QuadTree::in_bounds(double x, double y){
-    return ((startX < x) && (x < (startX + size))) && ((startY < y) && (y < (startY + size)));
+bool QuadTree::in_bounds(point_t point){
+    return ((start.x < point.x) && (point.x < (start.x + size))) && ((start.y < point.y) && (point.y < (start.y + size)));
 }
 
-double QuadTree::center_of_mass(double x1, double x2, double m1, double m2){
+double QuadTree::center_of_mass(double x1, double m1, double x2, double m2){
     return (x1*m1 + x2*m2)/(m1*m2);
 }
 
-int QuadTree::node_position(double startX, double startY, double x, double y, int depth){
-    if(x < startX + size / pow(2, depth)){
-        if(y < startY + size / pow(2, depth))
+int QuadTree::node_position(point_t start, point_t point, int depth){
+    bool xIsBigger = (point.x < start.x + size / pow(2, depth));
+    bool yIsBigger = (point.y < start.y + size / pow(2, depth));
+
+    if(xIsBigger){
+        if(yIsBigger)
             return 2;
         else
             return 1;
-    }
-    else{
-        if(y < startY + size / pow(2, depth))
+    }else{
+        if(yIsBigger)
             return 4;
         else
             return 3;       
@@ -57,138 +62,190 @@ int QuadTree::node_position(double startX, double startY, double x, double y, in
 }
 
 void QuadTree::remove_node(node_t* node){
-    if(node == nullptr)
-        return;
-    remove_node(node->upLeft);
-    remove_node(node->downLeft);
-    remove_node(node->upRight);
-    remove_node(node->downRight);
-    free(node);
+    if(node){
+        remove_node(node->upLeft);
+        remove_node(node->downLeft);
+        remove_node(node->upRight);
+        remove_node(node->downRight);
+        delete node;
+    }
 }
 
-node_t* QuadTree::insert_helper(double x, double y, double mass, node_t* current){
-    if(current->mass == 0){
+node_t* QuadTree::create_node(point_t point, double mass, int depth, point_t start, int id){
+    node_t* node = new node_t;
+    node->center.x = point.x;
+    node->center.y = point.y;
+    node->mass = mass;
+    node->start.x = start.x;
+    node->start.y = start.y;
+    node->depth = depth;
+    node->isPoint = true;
+    node->id = id;
+    node->upLeft = nullptr;
+    node->downLeft = nullptr;
+    node->upRight = nullptr;
+    node->downRight = nullptr;
+    return node;
+}
+
+node_t* QuadTree::insert_helper(point_t point, double mass, int id, node_t* current){
+    std::cout << "INSERTING ID=" << id << "\n";
+    if(current->mass == 0){ // a node with mass == 0 is gonna be the root
         current->mass = mass;
-        current->centerX = x;
-        current->centerY = y;
+        current->center.x = point.x;
+        current->center.y = point.y;
         current->isPoint = true;
+        current->id = id;
         return current;
     }
 
     if(current->isPoint){
-        node_t* n1 = new node_t;
-        node_t* n2 = new node_t;
-
-        n1->depth = current->depth + 1;
-        n1->centerX = x;
-        n1->centerY = y;
-        n1->mass = mass;
-        n1->isPoint = true;
-
-        n2->depth = current->depth + 1;
-        n2->centerX = current->centerX;
-        n2->centerY = current->centerY;
-        n2->mass = current->mass;
-        n2->isPoint = true;
-
-        switch (node_position(current->startX, current->startY, x, y, current->depth + 1)){
-        case 1:
-            current->upLeft = n1;
-            n1->startX = current->startX;
-            n1->startY = current->startY + size / pow(2, n1->depth);
+        int n1 = node_position(current->start, point, current->depth + 1);
+        int n2 = node_position(current->start, current->center, current->depth + 1);
+        std::cout << "ISPOINT n1=" << n1 << " n2=" << n2 << "\n";
+        switch (n1){
+        case 1:{
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x;
+            start.y = current->start.y + size / pow(2, depth);
+            current->upLeft = create_node(point, mass, depth, start, id);
+            }
             break;
-        case 2:
-            current->downLeft = n1;
-            n1->startX = current->startX;
-            n1->startY = current->startY;
+        case 2:{
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x;
+            start.y = current->start.y;
+            current->downLeft = create_node(point, mass, depth, start, id);
+            }
             break;
-        case 3:
-            current->upRight = n1;
-            n1->startX = current->startX + size / pow(2, n1->depth);
-            n1->startY = current->startY + size / pow(2, n1->depth);
+        case 3:{
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x + size / pow(2, depth);
+            start.y = current->start.y + size / pow(2, depth);
+            current->upRight = create_node(point, mass, depth, start, id);
+            }
             break;
-        case 4:
-            current->downRight = n1;
-            n1->startX = current->startX + size / pow(2, n1->depth);
-            n1->startY = current->startY;
-            break;
-        default:
-            break;
-        }
-
-        switch (node_position(current->startX, current->startY, current->centerX, current->centerY, current->depth + 1)){
-        case 1:
-            current->upLeft = n2;
-            n2->startX = current->startX;
-            n2->startY = current->startY + size / pow(2, n2->depth);
-            break;
-        case 2:
-            current->downLeft = n2;
-            n2->startX = current->startX;
-            n2->startY = current->startY;
-            break;
-        case 3:
-            current->upRight = n2;
-            n2->startX = current->startX + size / pow(2, n2->depth);
-            n2->startY = current->startY + size / pow(2, n2->depth);
-            break;
-        case 4:
-            current->downRight = n2;
-            n2->startX = current->startX + size / pow(2, n2->depth);
-            n2->startY = current->startY;
+        case 4:{
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x + size / pow(2, depth);
+            start.y = current->start.y;
+            current->downRight = create_node(point, mass, depth, start, id);
+            }
             break;
         default:
             break;
         }
 
+        switch (n2){
+        case 1:
+            if(current->upLeft == nullptr){
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x;
+            start.y = current->start.y + size / pow(2, depth);
+            current->upLeft = create_node(current->center, current->mass, depth, start, current->id);
+            }else
+                insert_helper(current->center, current->mass, current->id, current->upLeft);
+            break;
+        case 2: 
+            if(current->downLeft == nullptr){
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x;
+            start.y = current->start.y;
+            current->downLeft = create_node(current->center, current->mass, depth, start, current->id);
+            }else
+                insert_helper(current->center, current->mass, current->id, current->downLeft);
+            break;
+        case 3: 
+            if(current->upRight == nullptr){
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x + size / pow(2, depth);
+            start.y = current->start.y + size / pow(2, depth);
+            current->upRight = create_node(current->center, current->mass, depth, start, current->id);
+            }else
+                insert_helper(current->center, current->mass, current->id, current->upRight);
+            break;
+        case 4: 
+            if(current->downRight == nullptr){
+            int depth = current->depth + 1;
+            point_t start;
+            start.x = current->start.x + size / pow(2, depth);
+            start.y = current->start.y;
+            current->downRight = create_node(current->center, current->mass, depth, start, current->id); 
+            }else
+                insert_helper(current->center, current->mass, current->id, current->downRight);
+            break;
+        default:
+            break;
+        }
+        
         current->isPoint = false;
-        current->centerX = center_of_mass(current->centerX, current->mass, x, mass);
-        current->centerY = center_of_mass(current->centerY, current->mass, y, mass);
+        current->id = -1;
+        current->center.x = center_of_mass(current->center.x, current->mass, point.x, mass);
+        current->center.y = center_of_mass(current->center.y, current->mass, point.y, mass);
         current->mass += mass;
 
         return current;
 
-    }else{
-        current->centerX = center_of_mass(current->centerX, current->mass, x, mass);
-        current->centerY = center_of_mass(current->centerY, current->mass, y, mass);
+    }else if(current->depth > thres) //GE ETT MAX DJUP
+    else{
+        current->center.x = center_of_mass(current->center.x, current->mass, point.x, mass);
+        current->center.y = center_of_mass(current->center.y, current->mass, point.y, mass);
         current->mass += mass;
 
-        switch(node_position(current->startX, current->startY, current->centerX, current->centerY, current->depth + 1)){
+        int n1 = node_position(current->start, current->center, current->depth + 1);
+        std::cout << "ELSE n1=" << n1 << "\n";
+
+        switch(n1){
         case 1:
             if(current->upLeft == nullptr){
                 int depth = current->depth + 1;
-                double startX = current->startX;
-                double startY = current->startY + size / pow(2, depth);
-                current->upLeft = create_node(x, y, mass, depth, startX, startY);
+                point_t start;
+                start.x = current->start.x;
+                start.y = current->start.y + size / pow(2, depth);
+                current->upLeft = create_node(point, mass, depth, start, id);
             }else
-                return insert_helper(x, y, mass, current->upLeft);
+                return insert_helper(point, mass, id, current->upLeft);
+            break;
         case 2:
-            if(current->downLeft != nullptr){
+            if(current->downLeft == nullptr){
                 int depth = current->depth + 1;
-                double startX = current->startX;
-                double startY = current->startY;
-                current->downLeft = create_node(x, y, mass, depth, startX, startY);
+                point_t start;
+                start.x = current->start.x;
+                start.y = current->start.y;
+                current->downLeft = create_node(point, mass, depth, start, id);
             }else
-                return insert_helper(x, y, mass, current->downLeft);
+                return insert_helper(point, mass, id, current->downLeft);
+            break;
         case 3:
-            if(current->upRight != nullptr){
+            if(current->upRight == nullptr){
                 int depth = current->depth + 1;
-                double startX = current->startX + size / pow(2, depth);
-                double startY = current->startY + size / pow(2, depth);
-                current->upRight = create_node(x, y, mass, depth, startX, startY);
+                point_t start;
+                start.x = current->start.x + size / pow(2, depth);
+                start.y = current->start.y + size / pow(2, depth);
+                current->upRight = create_node(point, mass, depth, start, id);
             }else
-                return insert_helper(x, y, mass, current->upRight);
-
+                return insert_helper(point, mass, id, current->upRight);
+            break;
         case 4:
-            if(current->downRight != nullptr){
+            if(current->downRight == nullptr){
                 int depth = current->depth + 1;
-                double startX = current->startX;
-                double startY = current->startY;
-                current->downRight = create_node(x, y, mass, depth, startX, startY);
+                point_t start;
+                start.x = current->start.x + size / pow(2, depth);
+                start.y = current->start.y;
+                current->downRight = create_node(point, mass, depth, start, id);
             }else
-                return insert_helper(x, y, mass, current->downRight);
+                return insert_helper(point, mass, id, current->downRight);
+            break;
         default:
             return nullptr;
         }
+        return current;
     }
 }

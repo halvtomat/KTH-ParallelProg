@@ -62,7 +62,7 @@ Bodies::~Bodies(){
 
 void Bodies::initialize_bodies(){
     std::default_random_engine re;
-    std::normal_distribution<double> distPOS(0, spread);
+    std::uniform_real_distribution<double> distPOS(-spread, spread);
     std::normal_distribution<double> distV(0, maxSpeed);
     std::normal_distribution<double> distM(maxMass/2, maxMass);
 
@@ -133,6 +133,14 @@ point_t point_deltap(point_t v, point_t deltav, double deltaTime){
     deltap.x = (v.x + deltav.x/2) * deltaTime;
     deltap.y = (v.y + deltav.y/2) * deltaTime;
     return deltap;
+}
+
+double read_double_argument(int argc, const char **argv, std::string identifier, double default_value){
+    double arg = default_value;
+    for(int i = 1; i < argc; i++)
+        if(identifier == argv[i])
+            arg = atof(argv[i+1]);
+    return arg;
 }
 
 int read_int_argument(int argc, const char **argv, std::string identifier, int defaul_value){
