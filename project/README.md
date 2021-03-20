@@ -68,8 +68,46 @@ This version is a sequential variant using the **Barnes-Hut** algorithm to appro
 
 The fastest variant, this version uses the Barnes-hut algortihm and is parallelized.
 
-## Performance Evaluation
+## Performance Tests
 
+Execution times from different runs are found in the table below.
+
+In these tests the parallel simulators used 4 workers (threads) and the barnes hut variants had the *far* cutoff set to 0.5.
+The tests were run with *n* bodies and ran for 75000 iterations each.
+
+| *n* | seq_slow | para_slow | seq_fast | para_fast |
+|-----|----------|-----------|----------|-----------|
+| 120 | 14,7973  | 7,6025    | 0,802614 | 0,652334  |
+| 180 | 33,0113  | 16,2822   | 1,23728  | 0,946102  |
+| 240 | 58,3416  | 28,4619   | 1,6818   | 1,26323   |
+
+Further, the speedup of the parallel simulators was tested, the table below displays the execution times of the para_slow program with workers ranging from 1-4.
+
+| *n* |    1    |    2    |    3    |    4    |
+|-----|---------|---------|---------|---------|
+| 120 | 14,6127 | 11,4769 | 8,7737  | 7,6025  |
+| 180 | 32,3998 | 25,2829 | 19,397  | 16,2822 |
+| 240 | 57,2053 | 44,328  | 34,006  | 28,4619 |
+
+The table below displays the execution times of the para_fast program with workers ranging from 1-4.
+
+| *n* |    1    |    2     |    3     |    4     |
+|-----|---------|----------|----------|----------|
+| 120 | 0,80037 | 0,719045 | 0,665415 | 0,652334 |
+| 180 | 1,26338 | 1,04546  | 0,971178 | 0,946102 |
+| 240 | 1,71769 | 1,38587  | 1,26489  | 1,26323  |
+
+### Results Discussion
+The results show what was expected from the different programs with the Barnes-Hut algorithm being the most important performance upgrade. The brute force approach is running with a complexity of O(N^2) while the Barnes-Hut algorithm has a complexity of O(NlogN) which is significantly faster.
+
+![Performance chart](/images/performance.png)
+
+The parallelization speedup is less, but still significant, especially when using the brute force algorithm. 
+
+![para_slow speedup chart](/images/para_slow.png)
+
+The parallelization of the Barnes-Hut algorithm is less significant because a bigger part of the algorithm is hard to parallelize. Only the force calculation part of the program is parallel in this version, building the tree and movies the bodies is still run in sequens.
+![para_fast speedup chart](/images/para_fast.png)
 
 
 ## Conclusions
