@@ -1,9 +1,10 @@
 #ifndef QUAD_TREE_H
 #define QUAD_TREE_H
 
-#include "common.h"
+#include <cmath>
+#include "point.h"
 
-#define SINGULARITY_THRESHOLD 1e-8
+#define MAX_DEPTH 10
 
 struct node_t{
     double mass;

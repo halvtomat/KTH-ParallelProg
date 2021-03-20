@@ -5,6 +5,7 @@
 #define ARENA_START -SPREAD
 
 int gnumBodies = 0;
+int numWorkers = 0;
 double far = 0;
 
 Bodies *bodies;
@@ -27,8 +28,12 @@ int main(int argc, char const *argv[]){
     int numSteps = read_int_argument(argc, argv, "-n", DEFAULT_NUM_STEPS);
     bool draw = read_bool_argument(argc, argv, "-d", false);
     bool godPoint = read_bool_argument(argc, argv, "-g", false);
+    numWorkers = read_int_argument(argc, argv, "-w", DEFAULT_NUM_WORKERS);
 
     f = (point_t *)malloc(sizeof(point_t)*gnumBodies);
+
+    omp_set_num_threads(numWorkers);
+
     bodies = new Bodies(
         gnumBodies,
         MAX_SPEED,
@@ -82,6 +87,7 @@ QuadTree* build_tree(){
 
 void calculate_forces(){
     QuadTree* tree = build_tree();
+    #pragma omp parallel for
     for(int i = 0; i < gnumBodies; i++){
         point_t force = force_util(tree->root, bodies->p[i], bodies->m[i], i);
         f[i].x = force.x;

@@ -1,5 +1,4 @@
 #include "quad_tree.h"
-#include <iostream>
 
 QuadTree::QuadTree(point_t start, double size){
     this->start.x = start.x;
@@ -89,20 +88,19 @@ node_t* QuadTree::create_node(point_t point, double mass, int depth, point_t sta
 }
 
 node_t* QuadTree::insert_helper(point_t point, double mass, int id, node_t* current){
-    std::cout << "INSERTING ID=" << id << "\n";
     if(current->mass == 0){ // a node with mass == 0 is gonna be the root
         current->mass = mass;
         current->center.x = point.x;
         current->center.y = point.y;
         current->isPoint = true;
         current->id = id;
-        return current;
-    }
 
-    if(current->isPoint){
+    }else if(current->depth > MAX_DEPTH){
+        return nullptr;
+
+    }else if(current->isPoint){
         int n1 = node_position(current->start, point, current->depth + 1);
         int n2 = node_position(current->start, current->center, current->depth + 1);
-        std::cout << "ISPOINT n1=" << n1 << " n2=" << n2 << "\n";
         switch (n1){
         case 1:{
             int depth = current->depth + 1;
@@ -191,16 +189,12 @@ node_t* QuadTree::insert_helper(point_t point, double mass, int id, node_t* curr
         current->center.y = center_of_mass(current->center.y, current->mass, point.y, mass);
         current->mass += mass;
 
-        return current;
-
-    }else if(current->depth > thres) //GE ETT MAX DJUP
-    else{
+    }else{
         current->center.x = center_of_mass(current->center.x, current->mass, point.x, mass);
         current->center.y = center_of_mass(current->center.y, current->mass, point.y, mass);
         current->mass += mass;
 
         int n1 = node_position(current->start, current->center, current->depth + 1);
-        std::cout << "ELSE n1=" << n1 << "\n";
 
         switch(n1){
         case 1:
@@ -246,6 +240,6 @@ node_t* QuadTree::insert_helper(point_t point, double mass, int id, node_t* curr
         default:
             return nullptr;
         }
-        return current;
     }
+    return current;
 }

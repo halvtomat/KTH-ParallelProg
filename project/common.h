@@ -8,6 +8,7 @@
 #include <SDL2/SDL.h>
 #include <omp.h>
 #include <iostream>
+#include "point.h"
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
@@ -23,12 +24,7 @@
 #define MAX_MASS 1e5
 #define DELAY 0
 #define DRAW_SIZE 2
-#define ZOOM_FACTOR 0.5
-
-struct point_t{
-    double x;
-    double y;
-};
+#define ZOOM_FACTOR 0.1
 
 class Bodies{
     private:
