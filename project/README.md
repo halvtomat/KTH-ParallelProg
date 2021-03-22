@@ -107,6 +107,7 @@ The parallelization speedup is less, but still significant, especially when usin
 ![para_slow speedup chart](/images/para_slow.png)
 
 The parallelization of the Barnes-Hut algorithm is less significant because a bigger part of the algorithm is hard to parallelize. Only the force calculation part of the program is parallel in this version, building the tree and movies the bodies is still run in sequens.
+
 ![para_fast speedup chart](/images/para_fast.png)
 
 
